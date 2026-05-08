@@ -289,7 +289,7 @@ func startIssue(projectPath string, repoName string, worktreeRoot string, useWor
 		}
 		if err := PromptForIssue(sessionName, worktreePath, repoName, issue, prompt); err != nil {
 			session.PromptError = err.Error()
-			_ = appendFile(filepath.Join(worktreePath, "reports", "CONVO_FEED.log"), fmt.Sprintf("[%s] start_issue_work: failed to send implementation prompt for %s to tmux session %s: %s\n", time.Now().Format(time.RFC3339), issueKey, sessionName, err))
+			_ = appendFile(filepath.Join(worktreePath, "reports", "CONVO_FEED.log"), fmt.Sprintf("[%s] start_ticket_work: failed to send implementation prompt for %s to tmux session %s: %s\n", time.Now().Format(time.RFC3339), issueKey, sessionName, err))
 			return session, nil
 		}
 		session.PromptSent = true
@@ -311,7 +311,7 @@ func PromptForIssue(sessionName string, worktreePath string, repoName string, is
 		return err
 	}
 	if worktreePath != "" {
-		if err := appendFile(filepath.Join(worktreePath, "reports", "CONVO_FEED.log"), fmt.Sprintf("[%s] start_issue_work: sent implementation prompt for %s to tmux session %s\n", time.Now().Format(time.RFC3339), issueKey, sessionName)); err != nil {
+		if err := appendFile(filepath.Join(worktreePath, "reports", "CONVO_FEED.log"), fmt.Sprintf("[%s] start_ticket_work: sent implementation prompt for %s to tmux session %s\n", time.Now().Format(time.RFC3339), issueKey, sessionName)); err != nil {
 			return err
 		}
 	}
@@ -326,7 +326,7 @@ func AppendPromptError(worktreePath string, issueKey string, sessionName string,
 	if issueKey == "" {
 		issueKey = "issue"
 	}
-	return appendFile(filepath.Join(worktreePath, "reports", "CONVO_FEED.log"), fmt.Sprintf("[%s] start_issue_work: failed to send implementation prompt for %s to tmux session %s: %s\n", time.Now().Format(time.RFC3339), issueKey, sessionName, promptErr))
+	return appendFile(filepath.Join(worktreePath, "reports", "CONVO_FEED.log"), fmt.Sprintf("[%s] start_ticket_work: failed to send implementation prompt for %s to tmux session %s: %s\n", time.Now().Format(time.RFC3339), issueKey, sessionName, promptErr))
 }
 
 func ensureWorktree(projectPath string, worktreeRoot string, worktreePath string, branchName string) error {
