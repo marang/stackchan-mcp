@@ -103,12 +103,6 @@ Use the say_hello tool and greet Markus.
 or:
 
 ```text
-Use the current_time_vienna tool.
-```
-
-or:
-
-```text
 Use the search_internet tool to search the web for today's OpenAI news.
 ```
 
