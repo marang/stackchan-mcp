@@ -4,89 +4,14 @@
   <img src="assets/stackchan-mcp.png" alt="StackChan MCP logo" width="420">
 </p>
 
-This repository contains one local `stackchan-mcp` binary for StackChan/XiaoZhi,
-Codex MCP stdio, and issue-work commands.
+`stackchan-mcp` exposes a small set of local development tools to Codex and to
+StackChan/XiaoZhi. The main use case is voice-triggered ticket work: StackChan
+calls a tool, the tool prepares a Linear ticket worktree and tmux session, and
+Codex receives the implementation prompt.
 
-## What This MCP Does
+## Setup
 
-StackChan MCP is a local automation bridge for voice-driven development work.
-It gives StackChan and Codex a small, focused tool surface:
-
-- `Linear:` list teams and fetch ticket details by issue key.
-- `Project discovery:` find local Git repositories under `~/Dev`.
-- `Worktrees:` create or reuse isolated Git worktrees for Linear tickets.
-- `tmux:` create, validate, repair, or reuse ticket sessions.
-- `Codex handoff:` start Codex in one pane and queue a guarded prompt.
-- `Completion notes:` write status messages to `reports/CONVO_FEED.log`.
-- `Web search:` search the web or a specific public HTTP/HTTPS page.
-- `Diagnostics:` verify MCP connectivity with a small greeting tool.
-
-The main workflow is:
-
-```text
-Say "start STACHA 2" to StackChan
-  -> Linear issue STACHA-2 is loaded
-  -> the team key is mapped to a repo query
-  -> a matching Git repo is resolved under ~/Dev
-  -> a git worktree is created or reused
-  -> a tmux session is created or repaired
-  -> Codex is started in pane 0
-  -> a guarded implementation prompt is queued for Codex
-```
-
-Repo resolution for `start_ticket_work` works like this:
-
-- if `repo` is passed explicitly, that value is used
-- otherwise the Linear team key is mapped to a repo query
-- `RIOT` maps to `riotbox`
-- every other team maps to the lowercase team key, for example `STACHA` to
-  `stacha`
-- only direct child directories of `~/Dev` are checked
-- only Git repositories or Git worktrees are considered
-- exact directory name matches win over fuzzy matches
-- fuzzy matching is a case-insensitive substring match on the directory name
-- if there are zero matches or multiple fuzzy matches, `start_ticket_work`
-  returns an error instead of guessing
-
-It is intentionally not a general remote-control server. The exposed tool
-surface is kept small and focused on local development workflows.
-
-## How It Works
-
-`stackchan-mcp` has three primary runtime modes:
-
-- `setup` stores credentials in the desktop Secret Service.
-- `serve` runs the MCP stdio server. Codex uses this mode directly.
-- `bridge` connects to the XiaoZhi WebSocket endpoint and forwards MCP traffic
-  to a local `serve` process.
-
-It also includes CLI helpers for resolving projects, starting issue work from a
-manifest, storing individual secrets, and writing completion notes.
-
-Codex and StackChan use different paths into the same tool implementation:
-
-```text
-Codex -> stackchan-mcp serve
-
-StackChan / XiaoZhi -> stackchan-mcp bridge -> stackchan-mcp serve
-```
-
-The bridge is only needed because XiaoZhi speaks to tools through a WebSocket
-endpoint. Codex does not need the bridge because it can start the MCP server
-directly over stdio.
-
-## Layout
-
-```text
-cmd/stackchan-mcp/      binary entry point
-internal/app/           CLI, XiaoZhi bridge, and MCP server orchestration
-internal/issuework/     Linear ticket worktree and tmux orchestration
-internal/linearclient/  Linear GraphQL client
-internal/search/        Web search, page scraping, and URL safety checks
-internal/secretstore/   Secret Service wrapper around secret-tool
-```
-
-## Requirements
+Requirements:
 
 - Go
 - Git
@@ -97,180 +22,30 @@ internal/secretstore/   Secret Service wrapper around secret-tool
 - Linear API key
 - XiaoZhi MCP WebSocket URL from the StackChan/XiaoZhi app
 
-Secrets are stored in the desktop Secret Service, not in `.env`.
-
-## Runtime Modes
-
-```mermaid
-flowchart LR
-  setup["stackchan-mcp setup"]
-  secrets["Desktop Secret Service<br/>XiaoZhi URL<br/>Linear API key"]
-  codex["Codex"]
-  serve1["stackchan-mcp serve<br/>MCP stdio server"]
-  stackchan["StackChan / XiaoZhi"]
-  bridge["stackchan-mcp bridge<br/>WebSocket adapter"]
-  serve2["stackchan-mcp serve<br/>MCP stdio server"]
-
-  setup --> secrets
-  codex --> serve1
-  stackchan <--> bridge
-  bridge --> secrets
-  bridge <--> serve2
-```
-
-`setup` stores credentials. `serve` is the MCP server used directly by Codex.
-`bridge` is only needed for StackChan/XiaoZhi and starts `serve` in the
-background.
-
-When called without arguments, the binary uses a practical default:
-
-- if stdin is a terminal, it starts `bridge`
-- if stdin is piped, it starts `serve`
-
-## Tools
-
-MCP itself exposes tools as a flat list. This README groups them by purpose.
-
-### Ticket Workflow
-
-These are the main tools StackChan should use for issue work.
-
-#### `start_ticket_work`
-
-Starts one Linear ticket by team key and ticket number, for example `STACHA`
-and `2`.
-
-Inputs: `team`, `number`, optional `repo`, optional `dry_run`, optional
-`start_implementation`, and optional `implementation_prompt`.
-
-It then:
-
-- loads the issue from Linear
-- maps the team to a local repo name
-- resolves the repo under `~/Dev`
-- creates or reuses a Git worktree
-- creates or repairs a tmux session
-- starts Codex in the first pane
-- starts a shell in the second pane
-- queues an implementation prompt for Codex by default
-
-If the worktree already exists, it is reused only when it belongs to the
-expected repo and is on the expected branch. If a tmux session already exists,
-it is reused only when its panes point at the expected worktree and the first
-pane is running Codex; otherwise the tmux session is recreated.
-
-Linear title and description are treated as untrusted issue context in the
-generated Codex prompt, so issue text is not allowed to override operating
-instructions.
-
-#### `finish_issue`
-
-Records a completion note for an issue. When a worktree path is provided, it
-writes to `reports/CONVO_FEED.log` and returns a short speakable completion
-message.
-
-Inputs: `issue_key`, optional `message`, and optional `worktree_path`.
-
-### Linear
-
-These tools only read Linear metadata.
-
-#### `linear_list_teams`
-
-Lists Linear teams using the Linear API key stored in Secret Service. This is
-useful for discovering the team key StackChan should use, for example `STACHA`.
-
-Inputs: none.
-
-### Project Discovery
-
-These tools help map spoken project or team names to local repositories.
-
-#### `resolve_project`
-
-Finds matching Git repositories under `~/Dev` or validates an explicit project
-path. This is useful when checking which local repo a Linear team should map to.
-
-Inputs: `query`, either a project name such as `riotbox` or a path such as
-`~/Dev/riotbox`.
-
-When `query` is a path, it must exist and be inside a Git working tree. When it
-is a name, only direct Git directories under `~/Dev` are considered. Exact name
-matches are returned first; otherwise case-insensitive substring matches are
-returned.
-
-### Web Search
-
-These tools leave the local development workflow and fetch public web content.
-
-#### `search_internet`
-
-Searches the web through DuckDuckGo HTML results, or searches a provided
-HTTP/HTTPS page for a term. When a URL is provided, it can optionally follow
-links from that page.
-
-Inputs: `query`, optional `url`, optional `max_results`, optional
-`follow_links`, optional `max_pages`, and optional `same_host_only`.
-
-The fetcher blocks local, private, link-local, multicast, and carrier-grade NAT
-addresses to avoid using the tool as an SSRF path into the local network.
-
-### Diagnostics
-
-These tools are mainly for checking connectivity.
-
-#### `say_hello`
-
-Small smoke-test tool. It returns a short greeting and is useful for checking
-that StackChan or Codex can call the MCP server.
-
-Inputs: optional `name`.
-
-## Build And Setup
-
-Build it first:
+Build the binary:
 
 ```bash
 cd ~/Dev/stackchan-mcp
 make build
 ```
 
-Or install it into your Go binary path:
+Optionally install it into your Go binary path:
 
 ```bash
 make install
 ```
 
-If the binary is installed through `go install` or a package manager, use the
-plain command name:
-
-```bash
-stackchan-mcp bridge
-stackchan-mcp serve
-stackchan-mcp setup
-```
-
-Run one-time setup. It stores the full URL from the StackChan/XiaoZhi app and
-the Linear API key in the desktop Secret Service:
+Store the XiaoZhi WebSocket URL and Linear API key:
 
 ```bash
 make setup
 ```
 
-To force re-entry of both values:
+Secrets are stored in the desktop Secret Service, not in `.env`.
 
-```bash
-./dist/stackchan-mcp setup --force
-```
+## Start StackChan Bridge
 
-To store only one secret:
-
-```bash
-./dist/stackchan-mcp xiaozhi-store-url
-./dist/stackchan-mcp linear-store-api-key
-```
-
-Daily start:
+StackChan/XiaoZhi needs the bridge process to be running:
 
 ```bash
 make start
@@ -282,34 +57,23 @@ This runs:
 ./dist/stackchan-mcp bridge
 ```
 
-If you installed it with `make install`, this is equivalent to:
+Keep this terminal running. The bridge connects to XiaoZhi and starts a local
+`stackchan-mcp serve` process in the background.
 
-```bash
-stackchan-mcp bridge
-```
-
-Package-manager installs use the same command form.
-
-For JSON-RPC debug logs:
+Useful commands:
 
 ```bash
 make debug
+./dist/stackchan-mcp bridge --ws "wss://api.xiaozhi.me/mcp?token=..."
+./dist/stackchan-mcp bridge --reconnect=false
 ```
 
-Useful direct bridge commands:
+If installed with `make install`, use `stackchan-mcp` instead of
+`./dist/stackchan-mcp`.
 
-```bash
-stackchan-mcp bridge --ws "wss://api.xiaozhi.me/mcp?token=..."
-stackchan-mcp bridge --debug
-stackchan-mcp bridge --reconnect=false
-```
+## Configure Codex
 
-Keep that terminal running. The bridge starts the same binary in MCP `serve`
-mode in the background.
-
-## Codex Usage
-
-Codex should run the MCP server in stdio mode:
+Codex does not need the bridge. It starts the MCP server directly in stdio mode:
 
 ```toml
 [mcp_servers.stackchan]
@@ -317,7 +81,7 @@ command = "/home/markus/Dev/stackchan-mcp/dist/stackchan-mcp"
 args = ["serve"]
 ```
 
-If `stackchan-mcp` is installed through `go install` or a package manager, use:
+If installed with `make install`:
 
 ```toml
 [mcp_servers.stackchan]
@@ -325,98 +89,115 @@ command = "stackchan-mcp"
 args = ["serve"]
 ```
 
-The included `xiaozhi-mcp.json` uses the installed command form:
+The included `xiaozhi-mcp.json` uses the installed command form.
 
-```json
-{
-  "mcpServers": {
-    "stackchan": {
-      "command": "stackchan-mcp",
-      "args": ["serve"]
-    }
-  }
-}
+## Architecture
+
+```mermaid
+flowchart LR
+  setup["stackchan-mcp setup"]
+  secrets["Desktop Secret Service<br/>XiaoZhi URL<br/>Linear API key"]
+  codex["Codex"]
+  serve1["stackchan-mcp serve<br/>MCP stdio server"]
+  stackchan["StackChan / XiaoZhi"]
+  bridge["stackchan-mcp bridge<br/>WebSocket adapter"]
+  serve2["stackchan-mcp serve<br/>MCP stdio server"]
+  tmux["tmux + Codex session"]
+  linear["Linear API"]
+  repos["~/Dev Git repos"]
+
+  setup --> secrets
+  codex --> serve1
+  stackchan <--> bridge
+  bridge --> secrets
+  bridge <--> serve2
+  serve1 --> linear
+  serve2 --> linear
+  serve1 --> repos
+  serve2 --> repos
+  serve1 --> tmux
+  serve2 --> tmux
 ```
 
-## StackChan Usage
+## Tools
 
-Then ask StackChan something like:
+MCP exposes tools as a flat list. They are grouped here by purpose.
 
-```text
-Use the say_hello tool and greet Markus.
-```
+### Ticket Workflow
 
-or:
+`start_ticket_work`
 
-```text
-Use the search_internet tool to search the web for today's OpenAI news.
-```
-
-## Ticket Workflows
-
-The normal StackChan path is `start_ticket_work`:
+Starts one Linear ticket by team key and ticket number. Example voice command:
 
 ```text
 Use start_ticket_work for STACHA 2.
 ```
 
-By default, this also sends an implementation prompt into the Codex tmux pane.
-To only prepare the worktree and tmux session, pass `start_implementation=false`.
+Inputs: `team`, `number`, optional `repo`, optional `dry_run`, optional
+`start_implementation`, and optional `implementation_prompt`.
 
-The shortcut maps known Linear teams to local repositories. For example, `RIOT`
-maps to `riotbox`; otherwise the lowercase team key is used as the repo name.
+What it does:
 
-For `RIOT-123`, it creates or reuses:
+- fetches the Linear issue
+- resolves the local repo under `~/Dev`
+- creates or reuses a Git worktree
+- creates or repairs a tmux session
+- starts Codex in the first pane
+- starts a shell in the second pane
+- queues an implementation prompt for Codex by default
 
-```text
-~/Dev/riotbox-worktrees/<linear-branch-name>
-tmux session: riotbox-RIOT-123
-```
+Repo matching:
 
-## Manual Issue Work
+- explicit `repo` wins
+- otherwise the Linear team key is mapped to a repo query
+- `RIOT` maps to `riotbox`
+- every other team maps to the lowercase team key, for example `STACHA` to
+  `stacha`
+- only direct Git directories under `~/Dev` are checked
+- exact directory name matches win over fuzzy substring matches
+- zero matches or multiple fuzzy matches return an error instead of guessing
 
-This is the lower-level CLI path. It is useful for scripted batches or manual
-debugging, but it is not the normal StackChan voice workflow. StackChan should
-usually call `start_ticket_work` instead.
+`finish_issue`
 
-Resolve a repo:
+Records a completion note for an issue. With `worktree_path`, it writes to
+`reports/CONVO_FEED.log`.
 
-```bash
-./dist/stackchan-mcp resolve --project riotbox
-```
+Inputs: `issue_key`, optional `message`, and optional `worktree_path`.
 
-Dry-run a manifest:
+### Linear
 
-```bash
-./dist/stackchan-mcp start --manifest /path/to/manifest.json --dry-run
-```
+`linear_list_teams`
 
-Start real worktrees and tmux sessions:
+Lists Linear teams from the stored Linear API key. Use it when the spoken team
+key is unknown.
 
-```bash
-./dist/stackchan-mcp start --manifest /path/to/manifest.json
-```
+### Project Discovery
 
-Finish an issue:
+`resolve_project`
 
-```bash
-./dist/stackchan-mcp finish --issue RIOT-123 --message "RIOT-123 is done." --worktree ~/Dev/riotbox-worktrees/branch-name
-```
+Finds Git repositories under `~/Dev` or validates an explicit project path.
 
-Manifest file for `start --manifest`:
+Inputs: `query`, either a project name such as `riotbox` or a path such as
+`~/Dev/riotbox`.
 
-```json
-{
-  "project_path": "~/Dev/riotbox",
-  "repo_name": "riotbox",
-  "issues": [
-    {
-      "key": "RIOT-123",
-      "number": 123,
-      "title": "Fix audio panic",
-      "url": "https://linear.app/example/issue/RIOT-123",
-      "branch_name": "markus/riot-123-fix-audio-panic"
-    }
-  ]
-}
-```
+### Web Search
+
+`search_internet`
+
+Searches DuckDuckGo HTML results or searches a provided public HTTP/HTTPS page.
+When a URL is provided, it can optionally follow links from that page.
+
+Inputs: `query`, optional `url`, optional `max_results`, optional
+`follow_links`, optional `max_pages`, and optional `same_host_only`.
+
+### Diagnostics
+
+`say_hello`
+
+Returns a short greeting to verify that StackChan or Codex can call the MCP
+server.
+
+## More Docs
+
+- [Manifest workflow](docs/manifest.md)
+- [Internals](docs/internals.md)
