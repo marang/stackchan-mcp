@@ -11,8 +11,7 @@ make build
 ```
 
 Run one-time setup. It stores the full URL from the StackChan/XiaoZhi app and
-the Linear API key in the desktop Secret Service. Secrets are not written to
-`.env`:
+the Linear API key in the desktop Secret Service:
 
 ```bash
 make setup
@@ -102,15 +101,14 @@ tmux session: riotbox-RIOT-123
 ```
 
 For live Linear issue details, store a Linear API key in the desktop Secret
-Service. It is not written to `.env`. `make setup` does this, or you can run
-only the Linear setup:
+Service. `make setup` does this, or you can run only the Linear setup:
 
 ```bash
 ./dist/stackchan-mcp linear-store-api-key
 ```
 
 The API key is stored in the desktop Secret Service through `secret-tool`
-(GNOME Keyring/KWallet compatible), not in `.env`.
+(GNOME Keyring/KWallet compatible).
 
 Manifest shape:
 
