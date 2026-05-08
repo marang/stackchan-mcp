@@ -10,7 +10,6 @@ import (
 	"stackchan-mcp/internal/search"
 	"strings"
 	"sync"
-	"time"
 )
 
 type request struct {
@@ -92,16 +91,8 @@ func handle(req request) {
 						},
 					},
 				},
-				{
-					"name":        "current_time_vienna",
-					"description": "Returns the current local time in Vienna.",
-					"inputSchema": map[string]any{
-						"type":       "object",
-						"properties": map[string]any{},
-					},
-				},
-				{
-					"name":        "search_internet",
+					{
+						"name":        "search_internet",
 					"description": "Searches the web for a query and returns result titles, links, and snippets. If a URL is provided, searches that page and can optionally follow links from it.",
 					"inputSchema": map[string]any{
 						"type":     "object",
@@ -134,71 +125,8 @@ func handle(req request) {
 						},
 					},
 				},
-				{
-					"name":        "start_issue_work",
-					"description": "Starts isolated git worktrees and tmux sessions for one or more already-resolved Linear issues.",
-					"inputSchema": map[string]any{
-						"type":     "object",
-						"required": []string{"project_path", "issues"},
-						"properties": map[string]any{
-							"project_path": map[string]any{
-								"type":        "string",
-								"description": "Git repo root, usually under ~/Dev",
-							},
-							"repo_name": map[string]any{
-								"type":        "string",
-								"description": "Optional repo display name",
-							},
-							"worktree_root": map[string]any{
-								"type":        "string",
-								"description": "Optional root for worktrees, default ~/Dev/<repo>-worktrees",
-							},
-							"use_worktrees": map[string]any{
-								"type":        "boolean",
-								"description": "Use git worktrees; required for multiple issues",
-							},
-							"dry_run": map[string]any{
-								"type":        "boolean",
-								"description": "Validate and return planned sessions without changing git or tmux",
-							},
-							"issues": map[string]any{
-								"type": "array",
-								"items": map[string]any{
-									"type":     "object",
-									"required": []string{"key", "title"},
-									"properties": map[string]any{
-										"key": map[string]any{
-											"type":        "string",
-											"description": "Linear issue key, e.g. RIOT-123",
-										},
-										"number": map[string]any{
-											"type":        "number",
-											"description": "Linear issue number",
-										},
-										"title": map[string]any{
-											"type":        "string",
-											"description": "Linear issue title",
-										},
-										"url": map[string]any{
-											"type":        "string",
-											"description": "Linear issue URL",
-										},
-										"branch_name": map[string]any{
-											"type":        "string",
-											"description": "Linear gitBranchName when available",
-										},
-										"description": map[string]any{
-											"type":        "string",
-											"description": "Optional issue description",
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				{
-					"name":        "start_ticket_work",
+					{
+						"name":        "start_ticket_work",
 					"description": "Voice-friendly shortcut to start one Linear ticket by team key and number, e.g. RIOT 123. It fetches the issue from Linear using the API key stored in Secret Service.",
 					"inputSchema": map[string]any{
 						"type":     "object",
@@ -300,13 +228,6 @@ func handleToolCall(req request) {
 			name = "StackChan"
 		}
 		writeText(req.ID, fmt.Sprintf("Hello %s, this comes from Markus' Go MCP.", name))
-	case "current_time_vienna":
-		loc, err := time.LoadLocation("Europe/Vienna")
-		if err != nil {
-			writeError(req.ID, -32603, err.Error())
-			return
-		}
-		writeText(req.ID, "Current time in Vienna: "+time.Now().In(loc).Format("Monday, 02.01.2006 15:04:05 MST"))
 	case "search_internet":
 		result, err := search.SearchInternet(params.Arguments)
 		if err != nil {
@@ -314,20 +235,6 @@ func handleToolCall(req request) {
 			return
 		}
 		writeText(req.ID, result)
-	case "start_issue_work":
-		result, err := startIssueWork(params.Arguments)
-		if err != nil {
-			writeError(req.ID, -32603, err.Error())
-			return
-		}
-		writeResult(req.ID, map[string]any{
-			"content": []map[string]any{
-				{
-					"type": "text",
-					"text": result,
-				},
-			},
-		})
 	case "start_ticket_work":
 		result, err := startTicketWork(params.Arguments)
 		if err != nil {
@@ -359,29 +266,6 @@ func handleToolCall(req request) {
 	default:
 		writeError(req.ID, -32602, "Unknown tool: "+params.Name)
 	}
-}
-
-func startIssueWork(args map[string]any) (string, error) {
-	var manifest issuework.Manifest
-	data, err := json.Marshal(args)
-	if err != nil {
-		return "", err
-	}
-	if err := json.Unmarshal(data, &manifest); err != nil {
-		return "", err
-	}
-
-	dryRun := boolArg(args, "dry_run", false)
-	result, err := issuework.Start(manifest, issuework.StartOptions{DryRun: dryRun})
-	if err != nil {
-		return "", err
-	}
-
-	data, err = json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
 }
 
 func startTicketWork(args map[string]any) (string, error) {
