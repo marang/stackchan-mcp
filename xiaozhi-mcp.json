@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "stackchan": {
+      "command": "./dist/stackchan-mcp",
+      "args": [
+        "serve"
+      ]
+    }
+  },
+  "serverInfo": {
+    "serverName": "markus-stackchan-local-tools",
+    "version": "1.0.0",
+    "description": "Local tools exposed to XiaoZhi / StackChan"
+  }
+}
