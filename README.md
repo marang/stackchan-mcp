@@ -14,6 +14,29 @@ internal/search/        Web search, page scraping, and URL safety checks
 internal/secretstore/   Secret Service wrapper around secret-tool
 ```
 
+## Runtime Modes
+
+```mermaid
+flowchart LR
+  setup["stackchan-mcp setup"]
+  secrets["Desktop Secret Service<br/>XiaoZhi URL<br/>Linear API key"]
+  codex["Codex"]
+  serve1["stackchan-mcp serve<br/>MCP stdio server"]
+  stackchan["StackChan / XiaoZhi"]
+  bridge["stackchan-mcp bridge<br/>WebSocket adapter"]
+  serve2["stackchan-mcp serve<br/>MCP stdio server"]
+
+  setup --> secrets
+  codex --> serve1
+  stackchan <--> bridge
+  bridge --> secrets
+  bridge <--> serve2
+```
+
+`setup` stores credentials. `serve` is the MCP server used directly by Codex.
+`bridge` is only needed for StackChan/XiaoZhi and starts `serve` in the
+background.
+
 Build it first:
 
 ```bash
