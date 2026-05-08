@@ -1,11 +1,11 @@
-package main
+package app
 
 import (
 	"log"
 	"os"
 )
 
-func main() {
+func Main() {
 	log.SetFlags(0)
 
 	if len(os.Args) == 1 {

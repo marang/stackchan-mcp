@@ -1,4 +1,4 @@
-package main
+package search
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func searchInternet(args map[string]any) (string, error) {
+func SearchInternet(args map[string]any) (string, error) {
 	rawURL, _ := args["url"].(string)
 	query, _ := args["query"].(string)
 	maxResults := numberArg(args, "max_results", 5)
@@ -455,4 +455,28 @@ func snippet(text string, matchStart int, matchEnd int) string {
 
 func isUTF8Boundary(b byte) bool {
 	return b < 0x80 || b >= 0xC0
+}
+
+func numberArg(args map[string]any, name string, fallback int) int {
+	value, ok := args[name]
+	if !ok {
+		return fallback
+	}
+	number, ok := value.(float64)
+	if !ok {
+		return fallback
+	}
+	return int(number)
+}
+
+func boolArg(args map[string]any, name string, fallback bool) bool {
+	value, ok := args[name]
+	if !ok {
+		return fallback
+	}
+	boolean, ok := value.(bool)
+	if !ok {
+		return fallback
+	}
+	return boolean
 }

@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "stackchan": {
-      "command": "./dist/stackchan-mcp",
+      "command": "stackchan-mcp",
       "args": [
         "serve"
       ]

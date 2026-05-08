@@ -3,11 +3,37 @@
 This folder contains one local `stackchan-mcp` binary for StackChan/XiaoZhi,
 Codex MCP stdio, and issue-work commands.
 
+## Layout
+
+```text
+cmd/stackchan-mcp/      binary entry point
+internal/app/           CLI, XiaoZhi bridge, and MCP server orchestration
+internal/issuework/     Linear ticket worktree and tmux orchestration
+internal/linearclient/  Linear GraphQL client
+internal/search/        Web search, page scraping, and URL safety checks
+internal/secretstore/   Secret Service wrapper around secret-tool
+```
+
 Build it first:
 
 ```bash
 cd ~/Dev/stackchan-mcp
 make build
+```
+
+Or install it into your Go binary path:
+
+```bash
+make install
+```
+
+If the binary is installed through `go install` or a package manager, use the
+plain command name:
+
+```bash
+stackchan-mcp bridge
+stackchan-mcp serve
+stackchan-mcp setup
 ```
 
 Run one-time setup. It stores the full URL from the StackChan/XiaoZhi app and
@@ -28,6 +54,14 @@ This runs:
 ```bash
 ./dist/stackchan-mcp bridge
 ```
+
+If you installed it with `make install`, this is equivalent to:
+
+```bash
+stackchan-mcp bridge
+```
+
+Package-manager installs use the same command form.
 
 For JSON-RPC debug logs:
 

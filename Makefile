@@ -1,4 +1,4 @@
-.PHONY: help all build test fmt setup start run debug serve clean FORCE
+.PHONY: help all build install test fmt setup start run debug serve clean FORCE
 
 DIST_DIR := dist
 BINARY := $(DIST_DIR)/stackchan-mcp
@@ -6,6 +6,7 @@ BINARY := $(DIST_DIR)/stackchan-mcp
 help:
 	@printf '%s\n' 'StackChan MCP targets:'
 	@printf '  %-12s %s\n' 'make build' 'Build the single binary: dist/stackchan-mcp'
+	@printf '  %-12s %s\n' 'make install' 'Install stackchan-mcp with go install'
 	@printf '  %-12s %s\n' 'make start' 'Start StackChan/XiaoZhi bridge; it runs the same binary as MCP serve in the background'
 	@printf '  %-12s %s\n' 'make debug' 'Start bridge with JSON-RPC debug logs'
 	@printf '  %-12s %s\n' 'make serve' 'Run MCP stdio server mode for Codex or manual checks'
@@ -22,17 +23,20 @@ all: test build
 
 build: $(BINARY)
 
+install:
+	go install ./cmd/stackchan-mcp
+
 $(DIST_DIR):
 	mkdir -p $(DIST_DIR)
 
 $(DIST_DIR)/stackchan-mcp: FORCE | $(DIST_DIR)
-	go build -o $@ .
+	go build -o $@ ./cmd/stackchan-mcp
 
 test:
 	go test ./...
 
 fmt:
-	gofmt -w *.go internal/issuework/*.go internal/linearclient/*.go internal/secretstore/*.go
+	gofmt -w cmd/stackchan-mcp/*.go internal/app/*.go internal/issuework/*.go internal/linearclient/*.go internal/search/*.go internal/secretstore/*.go
 
 setup: $(BINARY)
 	./$(BINARY) setup

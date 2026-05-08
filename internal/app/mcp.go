@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bufio"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"stackchan-mcp/internal/issuework"
 	"stackchan-mcp/internal/linearclient"
+	"stackchan-mcp/internal/search"
 	"strings"
 	"sync"
 	"time"
@@ -307,7 +308,7 @@ func handleToolCall(req request) {
 		}
 		writeText(req.ID, "Current time in Vienna: "+time.Now().In(loc).Format("Monday, 02.01.2006 15:04:05 MST"))
 	case "search_internet":
-		result, err := searchInternet(params.Arguments)
+		result, err := search.SearchInternet(params.Arguments)
 		if err != nil {
 			writeError(req.ID, -32603, err.Error())
 			return
