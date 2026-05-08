@@ -1,5 +1,9 @@
 # StackChan MCP
 
+<p align="center">
+  <img src="assets/stackchan-mcp.png" alt="StackChan MCP logo" width="420">
+</p>
+
 This folder contains one local `stackchan-mcp` binary for StackChan/XiaoZhi,
 Codex MCP stdio, and issue-work commands.
 
