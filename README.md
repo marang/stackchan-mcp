@@ -98,30 +98,26 @@ flowchart LR
   setup["stackchan-mcp setup"]
   secrets["Desktop Secret Service<br/>XiaoZhi URL<br/>Linear API key"]
   codex["Codex"]
-  serve1["stackchan-mcp serve<br/>MCP stdio server"]
   stackchan["StackChan / XiaoZhi"]
   bridge["stackchan-mcp bridge<br/>WebSocket adapter"]
-  serve2["stackchan-mcp serve<br/>MCP stdio server"]
+  serve["stackchan-mcp serve<br/>MCP stdio server"]
   tmux["tmux + Codex session"]
   linear["Linear API"]
   repos["~/Dev Git repos"]
 
   setup --> secrets
-  codex --> serve1
+  codex --> serve
   stackchan <--> bridge
   bridge --> secrets
-  bridge <--> serve2
-  serve1 --> linear
-  serve2 --> linear
-  serve1 --> repos
-  serve2 --> repos
-  serve1 --> tmux
-  serve2 --> tmux
+  bridge <--> serve
+  serve --> linear
+  serve --> repos
+  serve --> tmux
 ```
 
 ## Tools
 
-MCP exposes tools as a flat list. They are grouped here by purpose.
+These are the available tools, grouped by what they are used for.
 
 ### Ticket Workflow
 
