@@ -1,9 +1,13 @@
 package app
 
 import (
+	"fmt"
 	"log"
 	"os"
 )
+
+// Version is populated by release builds.
+var Version = "dev"
 
 func Main() {
 	log.SetFlags(0)
@@ -18,6 +22,8 @@ func Main() {
 	}
 
 	switch os.Args[1] {
+	case "version", "--version":
+		fmt.Println("stackchan-mcp " + Version)
 	case "serve":
 		runMCPServer()
 	case "bridge":
