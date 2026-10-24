@@ -68,7 +68,7 @@ func handle(req request) {
 			},
 			"serverInfo": map[string]any{
 				"name":    "stackchan-mcp",
-				"version": "1.0.0",
+				"version": Version,
 			},
 		})
 	case "notifications/initialized":
@@ -91,8 +91,8 @@ func handle(req request) {
 						},
 					},
 				},
-					{
-						"name":        "search_internet",
+				{
+					"name":        "search_internet",
 					"description": "Searches the web for a query and returns result titles, links, and snippets. If a URL is provided, searches that page and can optionally follow links from it.",
 					"inputSchema": map[string]any{
 						"type":     "object",
@@ -125,8 +125,8 @@ func handle(req request) {
 						},
 					},
 				},
-					{
-						"name":        "start_ticket_work",
+				{
+					"name":        "start_ticket_work",
 					"description": "Voice-friendly shortcut to start one Linear ticket by team key and number, e.g. RIOT 123. It fetches the issue from Linear using the API key stored in Secret Service.",
 					"inputSchema": map[string]any{
 						"type":     "object",

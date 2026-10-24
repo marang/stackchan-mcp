@@ -197,3 +197,18 @@ server.
 
 - [Manifest workflow](docs/manifest.md)
 - [Internals](docs/internals.md)
+
+## Releases
+
+Linux amd64 and arm64 binaries are published on the
+[releases page](https://github.com/marang/stackchan-mcp/releases).
+Download the archive for your architecture and `checksums.txt`, then verify it
+with `sha256sum --check --ignore-missing checksums.txt` before extracting.
+The archive includes `VERSION`; `stackchan-mcp --version` reports the binary version.
+External runtime tools must be installed separately.
+
+To prepare a release, update `VERSION` and add `docs/releases/vVERSION.md` in a
+reviewed PR, run vet/tests and the documented runtime checks, then create the
+matching `vVERSION` tag on merged main. The tag workflow runs vet/tests, builds
+Linux archives with `scripts/release.sh`, and creates a new GitHub release with
+checksums. Existing releases and artifacts are never replaced.
